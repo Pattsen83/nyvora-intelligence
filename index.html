@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>NYVORA Intelligence</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #08080d;
+            color: #f5f5f7;
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 24px 20px;
+            border-bottom: 1px solid #24242d;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            color: #888894;
+            margin-top: 5px;
+            font-size: 13px;
+        }
+
+        main {
+            max-width: 900px;
+            margin: auto;
+            padding: 35px 20px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 40px 10px;
+        }
+
+        .koro {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 34px;
+            margin-bottom: 12px;
+        }
+
+        .hero p {
+            color: #9999a5;
+            line-height: 1.6;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        input {
+            flex: 1;
+            padding: 16px;
+            border-radius: 10px;
+            border: 1px solid #30303b;
+            background: #111118;
+            color: white;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 16px 22px;
+            border: none;
+            border-radius: 10px;
+            background: #8b5cf6;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .card {
+            background: #111118;
+            border: 1px solid #24242d;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 25px;
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+        }
+
+        .score {
+            font-size: 64px;
+            font-weight: 800;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .score span {
+            font-size: 20px;
+            color: #777783;
+        }
+
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 13px 0;
+            border-bottom: 1px solid #22222b;
+        }
+
+        .stat:last-child {
+            border-bottom: none;
+        }
+
+        .label {
+            color: #9999a5;
+        }
+
+        .value {
+            font-weight: bold;
+        }
+
+        .status {
+            color: #8b5cf6;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .search-box {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">NYVORA</div>
+    <div class="subtitle">INTELLIGENCE</div>
+</header>
+
+<main>
+
+    <section class="hero">
+
+        <div class="koro">◈</div>
+
+        <h1>See the signal.</h1>
+
+        <p>
+            AI-powered crypto intelligence for smarter research.
+        </p>
+
+        <div class="search-box">
+
+            <input
+                type="text"
+                id="tokenInput"
+                placeholder="Enter token or contract address"
+            >
+
+            <button onclick="analyzeToken()">
+                ANALYZE
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <section class="card" id="result">
+
+        <h2>NYVORA SCORE</h2>
+
+        <div class="score">
+            72 <span>/ 100</span>
+        </div>
+
+        <div class="stat">
+            <span class="label">Liquidity</span>
+            <span class="value">82</span>
+        </div>
+
+        <div class="stat">
+            <span class="label">Volume</span>
+            <span class="value">71</span>
+        </div>
+
+        <div class="stat">
+            <span class="label">Momentum</span>
+            <span class="value">79</span>
+        </div>
+
+        <div class="stat">
+            <span class="label">Distribution</span>
+            <span class="value">63</span>
+        </div>
+
+        <div class="stat">
+            <span class="label">Risk</span>
+            <span class="value">51</span>
+        </div>
+
+        <div class="status">
+            DEMO ANALYSIS
+        </div>
+
+    </section>
+
+
+    <section class="card">
+
+        <h2>ASK KORO</h2>
+
+        <p style="color:#9999a5; line-height:1.6;">
+            KORO will analyze market data, liquidity,
+            volume and risk factors.
+        </p>
+
+    </section>
+
+</main>
+
+
+<script>
+
+function analyzeToken() {
+
+    const token = document.getElementById("tokenInput").value;
+
+    if (token.trim() === "") {
+
+        alert("Enter a token or contract address.");
+
+        return;
+    }
+
+    alert(
+        "NYVORA is analyzing: " + token
+    );
+
+}
+
+</script>
+
+</body>
+</html>
