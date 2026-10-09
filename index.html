@@ -529,7 +529,96 @@ function scorePair(p) {
   }
 
   function card(p) {
-    
+  const score = scorePair(p);
+  const el = document.createElement("article");
+
+  el.className = "token-card";
+
+  const title = document.createElement("h3");
+  title.textContent =
+    p.baseToken?.name || p.baseToken?.symbol || "Unknown Token";
+
+  const symbol = p.baseToken?.symbol || "???";
+
+  const scoreEl = document.createElement("div");
+  scoreEl.className = "token-score";
+  scoreEl.textContent = `NYVORA Score: ${score.total}/100`;
+
+  const risk = document.createElement("div");
+  risk.className = "token-risk";
+
+  if (score.blocked) {
+    risk.textContent = "⛔ KRITISCH: Risikofilter aktiv";
+  } else if (score.warnings.length >= 3) {
+    risk.textContent = "🔴 HOHES RISIKO";
+  } else if (score.warnings.length >= 1) {
+    risk.textContent = "🟠 RISIKOHINWEISE";
+  } else {
+    risk.textContent = "🟢 Keine Warnungen aus diesen Checks";
+  }
+
+  const detail = document.createElement("p");
+  detail.textContent =
+    `Symbol: ${symbol} | ` +
+    `Preis: ${score.liquidity !== null && score.liquidity >= 0
+      ? (Number(p.priceUsd) > 0
+          ? "$" + Number(p.priceUsd).toPrecision(6)
+          : "Nicht verfügbar")
+      : "Nicht verfügbar"} | ` +
+    `Liquidität: ${score.liquidity === null
+      ? "Unbekannt"
+      : "$" + score.liquidity.toLocaleString("en-US", {
+          maximumFractionDigits: 0
+        })} | ` +
+    `24h Volumen: ${score.volume === null
+      ? "Unbekannt"
+      : "$" + score.volume.toLocaleString("en-US", {
+          maximumFractionDigits: 0
+        })}`;
+
+  const breakdown = document.createElement("p");
+  breakdown.className = "score-breakdown";
+  breakdown.textContent =
+    `Liquidität ${score.liqScore}/30 · ` +
+    `Volumen ${score.volScore}/25 · ` +
+    `Transaktionen ${score.txScore}/20 · ` +
+    `Momentum ${score.momentumScore}/15 · ` +
+    `Alter ${score.ageScore}/10`;
+
+  const warnings = document.createElement("ul");
+  warnings.className = "risk-warnings";
+
+  if (score.warnings.length === 0) {
+    const item = document.createElement("li");
+    item.textContent = "Keine Warnungen aus den geprüften Kriterien.";
+    warnings.appendChild(item);
+  } else {
+    score.warnings.forEach(message => {
+      const item = document.createElement("li");
+      item.textContent = "⚠️ " + message;
+      warnings.appendChild(item);
+    });
+  }
+
+  const link = document.createElement("a");
+  link.href = p.url || "#";
+  link.textContent = "Auf DEX Screener öffnen ↗";
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+
+  el.append(
+    title,
+    scoreEl,
+    risk,
+    detail,
+    breakdown,
+    warnings,
+    link
+  );
+
+  return el;
+}
+
 function scorePair(p) {
   const liquidity = Number(p.liquidity?.usd);
   const volume = Number(p.volume?.h24);
