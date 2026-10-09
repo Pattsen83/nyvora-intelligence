@@ -635,7 +635,11 @@ el.append(title, score, detail, breakdown, risk, link);
 
     } catch (error) {
       status.textContent =
-        "Abruf fehlgeschlagen. Prüfe deine Internetverbindung oder versuche es später erneut.";
+        
+status.textContent =
+  "NYVORA Fehler: " +
+  (error && error.message ? error.message : String(error));
+
     } finally {
       button.disabled = false;
     }
