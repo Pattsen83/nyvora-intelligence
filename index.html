@@ -345,5 +345,200 @@ HTML
   setInterval(loadPrices, 60000);
 })();
 </script>
+    
+<section id="nyvora-scanner" style="margin:24px auto;padding:20px;max-width:900px;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:16px;font-family:Arial,sans-serif;">
+  <h2>NYVORA / TOKEN INTELLIGENCE</h2>
+  <p style="color:#94a3b8">Base Network · Scanner &amp; NYVORA Score v1</p>
+
+  <form id="nv-form" style="display:flex;gap:8px;flex-wrap:wrap">
+    <input id="nv-query" required maxlength="100"
+      placeholder="Tokenname, Symbol oder Adresse"
+      style="flex:1;min-width:180px;padding:12px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:white">
+    <button id="nv-submit" type="submit"
+      style="padding:12px 16px;border:0;border-radius:8px;background:#7c3aed;color:white;font-weight:bold">
+      Base scannen
+    </button>
+  </form>
+
+  <p id="nv-status" role="status" style="color:#94a3b8;font-size:13px">
+    Suche nach Handelspaaren auf Base.
+  </p>
+  <div id="nv-results" style="display:grid;gap:12px"></div>
+
+  <p style="font-size:12px;color:#94a3b8;margin-top:18px">
+    Score v1 ist ein experimenteller Datenindikator, keine Sicherheitsprüfung
+    und keine Anlageberatung. Ergebnisse hängen von den verfügbaren Marktdaten ab.
+  </p>
+</section>
+
+<script>
+(function () {
+  const form = document.getElementById("nv-form");
+  const input = document.getElementById("nv-query");
+  const status = document.getElementById("nv-status");
+  const results = document.getElementById("nv-results");
+  const button = document.getElementById("nv-submit");
+
+  const number = v => Number.isFinite(Number(v)) ? Number(v) : 0;
+
+  function points(value, thresholds) {
+    let result = 0;
+    for (const [limit, score] of thresholds) {
+      if (value >= limit) result = score;
+    }
+    return result;
+  }
+
+  function scorePair(p) {
+    const liquidity = number(p.liquidity?.usd);
+    const volume = number(p.volume?.h24);
+    const tx = p.txns?.h24 || {};
+    const txCount = number(tx.buys) + number(tx.sells);
+    const change = p.priceChange?.h24;
+    const ageHours = p.pairCreatedAt
+      ? Math.max(0, (Date.now() - p.pairCreatedAt) / 3600000)
+      : 0;
+
+    const liqScore = points(liquidity, [
+      [1000, 5], [5000, 12], [10000, 18],
+      [25000, 24], [50000, 30]
+    ]);
+
+    const volScore = points(volume, [
+      [1000, 5], [5000, 10], [25000, 16],
+      [100000, 21], [250000, 25]
+    ]);
+
+    const txScore = points(txCount, [
+      [10, 4], [50, 8], [150, 13],
+      [500, 17], [1000, 20]
+    ]);
+
+    // Neutral market movement receives a middle score.
+    // Missing price-change data receives zero points.
+    let momentumScore = 0;
+    if (Number.isFinite(Number(change)) && change !== null) {
+      momentumScore = Math.max(0, Math.min(15, 7.5 + Number(change) * 0.25));
+    }
+
+    const ageScore = points(ageHours, [
+      [1, 2], [24, 4], [168, 6], [720, 8], [2160, 10]
+    ]);
+
+    const total = Math.round(
+      liqScore + volScore + txScore + momentumScore + ageScore
+    );
+
+    return {
+      total, liquidity, volume, txCount,
+      change: Number.isFinite(Number(change)) && change !== null
+        ? Number(change) : null,
+      ageHours, liqScore, volScore, txScore,
+      momentumScore, ageScore
+    };
+  }
+
+  function money(value) {
+    return new Intl.NumberFormat("de-DE", {
+      style: "currency", currency: "USD",
+      maximumFractionDigits: value < 1 ? 6 : 2
+    }).format(value);
+  }
+
+  function card(p) {
+    const s = scorePair(p);
+    const el = document.createElement("article");
+    el.style.cssText =
+      "padding:16px;background:#1e293b;border:1px solid #334155;border-radius:12px;overflow-wrap:anywhere";
+
+    const title = document.createElement("h3");
+    title.textContent =
+      (p.baseToken?.name || "Unbekannter Token") +
+      " (" + (p.baseToken?.symbol || "?") + ")";
+    title.style.marginTop = "0";
+
+    const score = document.createElement("p");
+    score.style.cssText = "font-size:24px;font-weight:bold;margin:8px 0";
+    score.textContent = "NYVORA Score: " + s.total + "/100";
+
+    const detail = document.createElement("p");
+    detail.style.cssText = "font-size:14px;line-height:1.8;color:#cbd5e1";
+    detail.textContent =
+      "Preis: " + (p.priceUsd ? money(number(p.priceUsd)) : "Nicht verfügbar") +
+      "\nLiquidität: " + money(s.liquidity) +
+      "\n24h Volumen: " + money(s.volume) +
+      "\nTransaktionen (24h): " + s.txCount +
+      "\nKursänderung (24h): " +
+      (s.change === null ? "Keine Daten" : s.change.toFixed(2) + "%") +
+      "\nAlter des Paars: " +
+      (p.pairCreatedAt ? Math.floor(s.ageHours) + " Stunden" : "Unbekannt");
+    detail.style.whiteSpace = "pre-line";
+
+    const breakdown = document.createElement("p");
+    breakdown.style.cssText = "font-size:12px;color:#94a3b8";
+    breakdown.textContent =
+      "Punkte: Liquidität " + s.liqScore + "/30 · Volumen " +
+      s.volScore + "/25 · Aktivität " + s.txScore + "/20 · Dynamik " +
+      s.momentumScore.toFixed(1) + "/15 · Alter " + s.ageScore + "/10";
+
+    const link = document.createElement("a");
+    link.href = p.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Handelspaar auf DEX Screener öffnen";
+    link.style.color = "#c4b5fd";
+
+    el.append(title, score, detail, breakdown, link);
+    return el;
+  }
+
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const query = input.value.trim();
+    if (!query) return;
+
+    button.disabled = true;
+    results.replaceChildren();
+    status.textContent = "Suche läuft...";
+
+    try {
+      const url =
+        "https://api.dexscreener.com/latest/dex/search?q=" +
+        encodeURIComponent(query);
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+      }
+
+      const data = await response.json();
+      const pairs = (data.pairs || [])
+        .filter(p => p.chainId === "base" && p.baseToken && p.url)
+        .sort((a, b) =>
+          number(b.liquidity?.usd) - number(a.liquidity?.usd)
+        );
+
+      if (!pairs.length) {
+        status.textContent =
+          "Keine passenden Base-Handelspaare gefunden. Prüfe die Schreibweise oder versuche eine Token-Adresse.";
+        return;
+      }
+
+      pairs.slice(0, 10).forEach(p => results.appendChild(card(p)));
+      status.textContent =
+        pairs.length + " passende Base-Handelspaare gefunden. " +
+        "Die ersten " + Math.min(10, pairs.length) +
+        " werden nach Liquidität sortiert angezeigt.";
+
+    } catch (error) {
+      status.textContent =
+        "Abruf fehlgeschlagen. Prüfe deine Internetverbindung oder versuche es später erneut.";
+    } finally {
+      button.disabled = false;
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
