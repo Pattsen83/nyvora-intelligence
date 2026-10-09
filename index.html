@@ -571,8 +571,28 @@ function scorePair(p) {
     link.textContent = "Handelspaar auf DEX Screener öffnen";
     link.style.color = "#c4b5fd";
 
-    el.append(title, score, detail, breakdown, link);
-    return el;
+   
+const risk = document.createElement("p");
+risk.style.cssText =
+  "padding:10px;border-radius:8px;background:#334155;color:#f8fafc;white-space:pre-line;font-size:13px";
+
+if (s.blocked) {
+  risk.textContent =
+    "RISIKOFILTER: Nicht für eine positive Einstufung freigegeben.";
+} else if (s.warnings.length) {
+  risk.textContent =
+    "WARNHINWEISE:\n• " + s.warnings.join("\n• ");
+} else {
+  risk.textContent =
+    "Keine Warnung durch die Basisfilter. Keine Sicherheitsgarantie.";
+}
+
+if (s.warnings.length && !s.blocked) {
+  risk.textContent += "\n• " + s.warnings.join("\n• ");
+}
+
+el.append(title, score, detail, breakdown, risk, link);
+
   }
 
   form.addEventListener("submit", async function (event) {
