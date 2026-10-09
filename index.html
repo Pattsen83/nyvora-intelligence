@@ -529,69 +529,134 @@ function scorePair(p) {
   }
 
   function card(p) {
-    const s = scorePair(p);
-    const el = document.createElement("article");
-    el.style.cssText =
-      "padding:16px;background:#1e293b;border:1px solid #334155;border-radius:12px;overflow-wrap:anywhere";
+    
+function scorePair(p) {
+  const liquidity = Number(p.liquidity?.usd);
+  const volume = Number(p.volume?.h24);
+  const buys = Number(p.txns?.h24?.buys);
+  const sells = Number(p.txns?.h24?.sells);
+  const price = Number(p.priceUsd);
+  const change = Number(p.priceChange?.h24);
+  const created = Number(p.pairCreatedAt);
 
-    const title = document.createElement("h3");
-    title.textContent =
-      (p.baseToken?.name || "Unbekannter Token") +
-      " (" + (p.baseToken?.symbol || "?") + ")";
-    title.style.marginTop = "0";
+  const hasLiq = Number.isFinite(liquidity) && liquidity > 0;
+  const hasVol = Number.isFinite(volume) && volume >= 0;
+  const hasTx = Number.isFinite(buys) && buys >= 0 &&
+                Number.isFinite(sells) && sells >= 0;
+  const hasPrice = Number.isFinite(price) && price > 0;
+  const hasChange = Number.isFinite(change);
+  const hasAge = Number.isFinite(created) && created > 0;
 
-    const score = document.createElement("p");
-    score.style.cssText = "font-size:24px;font-weight:bold;margin:8px 0";
-    score.textContent = "NYVORA Score: " + s.total + "/100";
+  const txCount = hasTx ? buys + sells : 0;
+  const ageHours = hasAge
+    ? Math.max(0, (Date.now() - created) / 3600000)
+    : null;
 
-    const detail = document.createElement("p");
-    detail.style.cssText = "font-size:14px;line-height:1.8;color:#cbd5e1";
-    detail.textContent =
-      "Preis: " + (p.priceUsd ? money(number(p.priceUsd)) : "Nicht verfügbar") +
-      "\nLiquidität: " + money(s.liquidity) +
-      "\n24h Volumen: " + money(s.volume) +
-      "\nTransaktionen (24h): " + s.txCount +
-      "\nKursänderung (24h): " +
-      (s.change === null ? "Keine Daten" : s.change.toFixed(2) + "%") +
-      "\nAlter des Paars: " +
-      (p.pairCreatedAt ? Math.floor(s.ageHours) + " Stunden" : "Unbekannt");
-    detail.style.whiteSpace = "pre-line";
+  // Liquidity: max 30 points
+  const liqScore = !hasLiq ? 0 :
+    liquidity >= 100000 ? 30 :
+    liquidity >= 50000 ? 25 :
+    liquidity >= 20000 ? 20 :
+    liquidity >= 10000 ? 12 :
+    liquidity >= 5000 ? 6 : 0;
 
-    const breakdown = document.createElement("p");
-    breakdown.style.cssText = "font-size:12px;color:#94a3b8";
-    breakdown.textContent =
-      "Punkte: Liquidität " + s.liqScore + "/30 · Volumen " +
-      s.volScore + "/25 · Aktivität " + s.txScore + "/20 · Dynamik " +
-      s.momentumScore.toFixed(1) + "/15 · Alter " + s.ageScore + "/10";
+  // 24-hour volume: max 25 points
+  const volScore = !hasVol ? 0 :
+    volume >= 1000000 ? 25 :
+    volume >= 250000 ? 20 :
+    volume >= 50000 ? 15 :
+    volume >= 10000 ? 10 :
+    volume >= 1000 ? 5 : 0;
 
-    const link = document.createElement("a");
-    link.href = p.url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = "Handelspaar auf DEX Screener öffnen";
-    link.style.color = "#c4b5fd";
+  // 24-hour transactions: max 20 points
+  const txScore = !hasTx ? 0 :
+    txCount >= 1000 ? 20 :
+    txCount >= 500 ? 16 :
+    txCount >= 100 ? 12 :
+    txCount >= 20 ? 6 : 0;
 
-   
-const risk = document.createElement("p");
-risk.style.cssText =
-  "padding:10px;border-radius:8px;background:#334155;color:#f8fafc;white-space:pre-line;font-size:13px";
+  // Momentum: max 15 points
+  const momentumScore = !hasChange ? 0 :
+    change >= 5 && change < 30 ? 15 :
+    change >= 0 && change < 5 ? 10 :
+    change >= 30 && change < 50 ? 8 :
+    change > -10 && change < 0 ? 5 :
+    change <= -10 && change > -50 ? 2 : 0;
 
-if (s.blocked) {
-  risk.textContent =
-    "RISIKOFILTER: Nicht für eine positive Einstufung freigegeben.";
-} else if (s.warnings.length) {
-  risk.textContent =
-    "WARNHINWEISE:\n• " + s.warnings.join("\n• ");
-} else {
-  risk.textContent =
-    "Keine Warnung durch die Basisfilter. Keine Sicherheitsgarantie.";
+  // Pair age: max 10 points
+  const ageScore = ageHours === null ? 0 :
+    ageHours >= 168 ? 10 :
+    ageHours >= 72 ? 8 :
+    ageHours >= 24 ? 6 :
+    ageHours >= 6 ? 3 : 0;
+
+  const total = Math.min(100,
+    liqScore + volScore + txScore +
+    momentumScore + ageScore
+  );
+
+  const warnings = [];
+
+  if (!hasLiq) warnings.push("Liquiditätsdaten fehlen");
+  else if (liquidity < 5000)
+    warnings.push("Kritisch niedrige Liquidität: unter $5.000");
+  else if (liquidity < 20000)
+    warnings.push("Niedrige Liquidität: unter $20.000");
+
+  if (!hasVol) warnings.push("Volumendaten fehlen");
+  else if (volume < 1000)
+    warnings.push("Sehr geringes 24h-Handelsvolumen");
+
+  if (!hasTx) {
+    warnings.push("Transaktionsdaten fehlen");
+  } else {
+    if (txCount < 20)
+      warnings.push("Weniger als 20 Transaktionen in 24h");
+
+    if (txCount > 0) {
+      const buyRatio = buys / txCount;
+      if (buyRatio > 0.90)
+        warnings.push("Extrem hoher Kaufanteil, mögliche Manipulation");
+      if (buyRatio < 0.10)
+        warnings.push("Extrem hoher Verkaufsanteil");
+    }
+  }
+
+  if (!hasPrice) warnings.push("Ungültiger oder fehlender Preis");
+
+  if (ageHours === null)
+    warnings.push("Alter des Handelspaars unbekannt");
+  else if (ageHours < 24)
+    warnings.push("Sehr junges Handelspaar: unter 24 Stunden");
+
+  if (!hasChange)
+    warnings.push("Kursänderungsdaten fehlen");
+  else if (Math.abs(change) >= 50)
+    warnings.push("Extreme Kursbewegung: mindestens 50 %");
+
+  const blocked =
+    !hasLiq || liquidity < 5000 ||
+    !hasVol || !hasTx || !hasPrice;
+
+  return {
+    total,
+    liquidity: hasLiq ? liquidity : null,
+    volume: hasVol ? volume : null,
+    txCount,
+    change: hasChange ? change : null,
+    ageHours,
+    liqScore,
+    volScore,
+    txScore,
+    momentumScore,
+    ageScore,
+    warnings,
+    dataComplete: hasLiq && hasVol && hasTx &&
+                  hasPrice && hasChange && hasAge,
+    blocked
+  };
 }
 
-if (s.warnings.length && !s.blocked) {
-  risk.textContent += "\n• " + s.warnings.join("\n• ");
-}
-
-el.append(title, score, detail, breakdown, risk, link);
 return el;
   }
 
