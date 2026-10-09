@@ -389,54 +389,137 @@ HTML
     return result;
   }
 
-  function scorePair(p) {
-    const liquidity = number(p.liquidity?.usd);
-    const volume = number(p.volume?.h24);
-    const tx = p.txns?.h24 || {};
-    const txCount = number(tx.buys) + number(tx.sells);
-    const change = p.priceChange?.h24;
-    const ageHours = p.pairCreatedAt
-      ? Math.max(0, (Date.now() - p.pairCreatedAt) / 3600000)
-      : 0;
+  
+function scorePair(p) {
+  const num = v =>
+    typeof v === "number" && Number.isFinite(v) ? v : null;
 
-    const liqScore = points(liquidity, [
-      [1000, 5], [5000, 12], [10000, 18],
-      [25000, 24], [50000, 30]
-    ]);
+  const liquidity = num(p.liquidity?.usd);
+  const volume = num(p.volume?.h24);
+  const buys = num(p.txns?.h24?.buys);
+  const sells = num(p.txns?.h24?.sells);
+  const change = num(p.priceChange?.h24);
+  const price = num(p.priceUsd);
+  const created = num(p.pairCreatedAt);
 
-    const volScore = points(volume, [
-      [1000, 5], [5000, 10], [25000, 16],
-      [100000, 21], [250000, 25]
-    ]);
+  const ageHours = created === null
+    ? null
+    : Math.max(0, (Date.now() - created) / 3600000);
 
-    const txScore = points(txCount, [
-      [10, 4], [50, 8], [150, 13],
-      [500, 17], [1000, 20]
-    ]);
-
-    // Neutral market movement receives a middle score.
-    // Missing price-change data receives zero points.
-    let momentumScore = 0;
-    if (Number.isFinite(Number(change)) && change !== null) {
-      momentumScore = Math.max(0, Math.min(15, 7.5 + Number(change) * 0.25));
+  // Keine Punkte für fehlende oder ungültige Daten.
+  function points(value, thresholds) {
+    if (value === null) return 0;
+    let result = 0;
+    for (const [limit, score] of thresholds) {
+      if (value >= limit) result = score;
     }
-
-    const ageScore = points(ageHours, [
-      [1, 2], [24, 4], [168, 6], [720, 8], [2160, 10]
-    ]);
-
-    const total = Math.round(
-      liqScore + volScore + txScore + momentumScore + ageScore
-    );
-
-    return {
-      total, liquidity, volume, txCount,
-      change: Number.isFinite(Number(change)) && change !== null
-        ? Number(change) : null,
-      ageHours, liqScore, volScore, txScore,
-      momentumScore, ageScore
-    };
+    return result;
   }
+
+  const liqScore = points(liquidity, [
+    [1000, 5], [5000, 12], [10000, 18],
+    [25000, 24], [50000, 30]
+  ]);
+
+  const volScore = points(volume, [
+    [1000, 5], [5000, 10], [25000, 16],
+    [100000, 21], [250000, 25]
+  ]);
+
+  const txCount = buys !== null && sells !== null
+    ? buys + sells : null;
+
+  const txScore = points(txCount, [
+    [10, 4], [50, 8], [150, 13],
+    [500, 17], [1000, 20]
+  ]);
+
+  // Neutraler Kursverlauf erhält mittlere Punkte.
+  const momentumScore = change === null
+    ? 0
+    : Math.max(0, Math.min(15, 7.5 + change * 0.25));
+
+  const ageScore = points(ageHours, [
+    [1, 2], [24, 4], [168, 6],
+    [720, 8], [2160, 10]
+  ]);
+
+  const total = Math.round(
+    liqScore + volScore + txScore +
+    momentumScore + ageScore
+  );
+
+  const warnings = [];
+
+  if (liquidity === null) {
+    warnings.push("Liquiditätsdaten fehlen");
+  } else if (liquidity < 5000) {
+    warnings.push("Sehr geringe Liquidität");
+  } else if (liquidity < 20000) {
+    warnings.push("Begrenzte Liquidität");
+  }
+
+  if (volume === null) {
+    warnings.push("Volumendaten fehlen");
+  }
+
+  if (txCount === null) {
+    warnings.push("Transaktionsdaten fehlen");
+  } else if (txCount < 20) {
+    warnings.push("Sehr geringe Handelsaktivität");
+  }
+
+  if (buys !== null && sells !== null && buys + sells > 0) {
+    const ratio = buys / (buys + sells);
+    if (ratio > 0.9 || ratio < 0.1) {
+      warnings.push("Extrem unausgewogenes Kauf-/Verkaufsverhältnis");
+    }
+  }
+
+  if (ageHours === null) {
+    warnings.push("Alter des Handelspaars unbekannt");
+  } else if (ageHours < 24) {
+    warnings.push("Handelspaar jünger als 24 Stunden");
+  }
+
+  if (change === null) {
+    warnings.push("Kursveränderung fehlt");
+  } else if (Math.abs(change) >= 50) {
+    warnings.push("Extreme 24h-Kursbewegung");
+  }
+
+  if (price === null || price <= 0) {
+    warnings.push("Kein gültiger positiver Kurs");
+  }
+
+  const dataComplete = [
+    liquidity, volume, buys, sells, change, price, created
+  ].every(v => v !== null);
+
+  // Konservative Anzeige: Bei sehr geringer Liquidität
+  // oder fehlenden Kerndaten keine positive Einstufung.
+  const blocked =
+    liquidity === null || liquidity < 5000 ||
+    volume === null || txCount === null ||
+    price === null || price <= 0;
+
+  return {
+    total,
+    liquidity: liquidity ?? 0,
+    volume: volume ?? 0,
+    txCount: txCount ?? 0,
+    change,
+    ageHours,
+    liqScore,
+    volScore,
+    txScore,
+    momentumScore,
+    ageScore,
+    warnings,
+    dataComplete,
+    blocked
+  };
+}
 
   function money(value) {
     return new Intl.NumberFormat("de-DE", {
