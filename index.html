@@ -795,13 +795,39 @@ const pairs = (data.pairs || [])
         return;
       }
 
-      pairs.slice(0, 10).forEach(p => results.appendChild(card(p)));
-      status.textContent =
-        
+      
+const minScore = Number(
+  document.getElementById("nv-min-score").value
+);
+
+const hideBlocked =
+  document.getElementById("nv-hide-blocked").checked;
+
+const filteredPairs = pairs.filter(p => {
+  const score = scorePair(p);
+
+  return score.total >= minScore &&
+    (!hideBlocked || !score.blocked);
+});
+
+if (filteredPairs.length === 0) {
+  results.replaceChildren();
+  status.textContent =
+    "Keine Token erfüllen die gewählten Filter. " +
+    "Versuche einen niedrigeren Mindestscore.";
+  return;
+}
+
+filteredPairs.slice(0, 10).forEach(p => {
+  results.appendChild(card(p));
+});
+
 status.textContent =
-  pairs.length + " passende Base-Handelspaare gefunden. " +
-  "Die ersten " + Math.min(10, pairs.length) +
+  filteredPairs.length +
+  " Token erfüllen die Filter. Die ersten " +
+  Math.min(10, filteredPairs.length) +
   " werden nach NYVORA Score sortiert angezeigt.";
+
 
 
     } catch (error) {
