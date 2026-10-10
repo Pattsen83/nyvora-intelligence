@@ -766,12 +766,13 @@ function scorePair(p) {
       }
 
       const data = await response.json();
-      const pairs = (data.pairs || [])
-        .filter(p => p.chainId === "base" && p.baseToken && p.url)
-        .sort((a, b) =>
-          number(b.liquidity?.usd) - number(a.liquidity?.usd)
-        );
-
+     
+const pairs = (data.pairs || [])
+  .filter(p => p.chainId === "base" && p.baseToken && p.url)
+  .sort((a, b) =>
+    scorePair(b).total - scorePair(a).total
+  );
+ 
       if (!pairs.length) {
         status.textContent =
           "Keine passenden Base-Handelspaare gefunden. Prüfe die Schreibweise oder versuche eine Token-Adresse.";
@@ -780,9 +781,12 @@ function scorePair(p) {
 
       pairs.slice(0, 10).forEach(p => results.appendChild(card(p)));
       status.textContent =
-        pairs.length + " passende Base-Handelspaare gefunden. " +
-        "Die ersten " + Math.min(10, pairs.length) +
-        " werden nach Liquidität sortiert angezeigt.";
+        
+status.textContent =
+  pairs.length + " passende Base-Handelspaare gefunden. " +
+  "Die ersten " + Math.min(10, pairs.length) +
+  " werden nach NYVORA Score sortiert angezeigt.";
+
 
     } catch (error) {
       status.textContent =
