@@ -350,15 +350,31 @@ HTML
   <h2>NYVORA / TOKEN INTELLIGENCE</h2>
   <p style="color:#94a3b8">Base Network · Scanner &amp; NYVORA Score v1</p>
 
-  <form id="nv-form" style="display:flex;gap:8px;flex-wrap:wrap">
-    <input id="nv-query" required maxlength="100"
-      placeholder="Tokenname, Symbol oder Adresse"
-      style="flex:1;min-width:180px;padding:12px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:white">
-    <button id="nv-submit" type="submit"
-      style="padding:12px 16px;border:0;border-radius:8px;background:#7c3aed;color:white;font-weight:bold">
-      Base scannen
-    </button>
-  </form>
+  
+<form id="nv-form" style="display:flex;gap:8px;flex-wrap:wrap">
+  <input id="nv-query" required maxlength="100"
+    placeholder="Tokenname, Symbol oder Adresse"
+    style="flex:1;min-width:180px;padding:12px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:white">
+
+  <select id="nv-min-score"
+    style="padding:12px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:white">
+    <option value="0">Mindestscore: 0</option>
+    <option value="40">Mindestscore: 40</option>
+    <option value="60" selected>Mindestscore: 60</option>
+    <option value="80">Mindestscore: 80</option>
+  </select>
+
+  <label style="display:flex;align-items:center;gap:6px;padding:8px;color:#f5f5f7">
+    <input id="nv-hide-blocked" type="checkbox" checked>
+    Kritische Token ausblenden
+  </label>
+
+  <button id="nv-submit" type="submit"
+    style="padding:12px 16px;border:0;border-radius:8px;background:#7c3aed;color:white;font-weight:bold">
+    Base scannen
+  </button>
+</form>
+
 
   <p id="nv-status" role="status" style="color:#94a3b8;font-size:13px">
     Suche nach Handelspaaren auf Base.
