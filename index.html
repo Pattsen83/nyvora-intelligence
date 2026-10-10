@@ -563,15 +563,25 @@ function scorePair(p) {
   const risk = document.createElement("div");
   risk.className = "token-risk";
 
-  if (score.blocked) {
-    risk.textContent = "⛔ KRITISCH: Risikofilter aktiv";
-  } else if (score.warnings.length >= 3) {
-    risk.textContent = "🔴 HOHES RISIKO";
-  } else if (score.warnings.length >= 1) {
-    risk.textContent = "🟠 RISIKOHINWEISE";
-  } else {
-    risk.textContent = "🟢 Keine Warnungen aus diesen Checks";
-  }
+  
+  
+if (score.blocked) {
+  risk.className = "token-risk risk-critical";
+  risk.textContent = "⛔ KRITISCHES RISIKO";
+} else if (score.warnings.length >= 3) {
+  risk.className = "token-risk risk-high";
+  risk.textContent = "🔴 HOHES RISIKO";
+} else if (
+  score.warnings.length >= 1 ||
+  !score.dataComplete
+) {
+  risk.className = "token-risk risk-medium";
+  risk.textContent = "🟠 MITTLERES RISIKO";
+} else {
+  risk.className = "token-risk risk-low";
+  risk.textContent = "🟢 NIEDRIGES ERKENNBARES RISIKO";
+}
+
 
   const detail = document.createElement("p");
   detail.textContent =
