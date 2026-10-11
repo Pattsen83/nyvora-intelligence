@@ -586,11 +586,11 @@ if (score.blocked) {
   const detail = document.createElement("p");
   detail.textContent =
     `Symbol: ${symbol} | ` +
-    `Preis: ${score.liquidity !== null && score.liquidity >= 0
-      ? (Number(p.priceUsd) > 0
-          ? "$" + Number(p.priceUsd).toPrecision(6)
-          : "Nicht verfügbar")
-      : "Nicht verfügbar"} | ` +
+    `Preis: ${Number.isFinite(Number(p.priceUsd)) &&
+  Number(p.priceUsd) > 0
+    ? "$" + Number(p.priceUsd).toPrecision(6)
+    : "Nicht verfügbar"
+} | ` +
     `Liquidität: ${score.liquidity === null
       ? "Unbekannt"
       : "$" + score.liquidity.toLocaleString("en-US", {
