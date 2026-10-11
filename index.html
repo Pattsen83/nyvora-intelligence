@@ -405,24 +405,6 @@ HTML
     return result;
   }
 
-  
-function scorePair(p) {
-  const num = v =>
-    typeof v === "number" && Number.isFinite(v) ? v : null;
-
-  const liquidity = num(p.liquidity?.usd);
-  const volume = num(p.volume?.h24);
-  const buys = num(p.txns?.h24?.buys);
-  const sells = num(p.txns?.h24?.sells);
-  const change = num(p.priceChange?.h24);
-  const price = num(p.priceUsd);
-  const created = num(p.pairCreatedAt);
-
-  const ageHours = created === null
-    ? null
-    : Math.max(0, (Date.now() - created) / 3600000);
-
-  // Keine Punkte für fehlende oder ungültige Daten.
   function points(value, thresholds) {
     if (value === null) return 0;
     let result = 0;
