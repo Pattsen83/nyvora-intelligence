@@ -822,16 +822,18 @@ status.textContent =
 
 
 
+    
     } catch (error) {
       status.textContent =
-        
-status.textContent =
-  "NYVORA Fehler: " +
-  (error && error.message ? error.message : String(error));
+        "NYVORA Fehler: " +
+        (error && error.message ? error.message : String(error));
 
     } finally {
       button.disabled = false;
     }
+  });
+})();
+
   });
 })();
 </script>
